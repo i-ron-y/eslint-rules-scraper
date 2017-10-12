@@ -63,7 +63,7 @@ usageString = (usageStringLineStart + ' Usage:\n' +
 			   usageStringLineStart + indent + 'If a rule has additional options, you can specify them using array literal syntax, such as:\n' +
 			   usageStringLineStart + indent*2 + '"quotes": [2, "double"]\n')
 
-outputString = '{' + linebreak + indent + '"rules": {' + linebreak + usageString + linebreak
+jsonOutputString = '{' + linebreak + indent + '"rules": {' + linebreak + usageString + linebreak
 
 for rg in range(len(ruleGroups)):
 	headerString = indent*2 + commentHeader + ' ' + ruleGroups[rg][0] + ' ' + commentHeader
@@ -78,10 +78,16 @@ for rg in range(len(ruleGroups)):
 
 	groupString = headerString + linebreak + groupRulesString
 
-	outputString += groupString + linebreak
+	jsonOutputString += groupString + linebreak
 
-outputString += indent + '}' + linebreak + '}'
+jsonOutputString += indent + '}' + linebreak + '}'
+jsOutputString = 'module.exports = ' + jsonOutputString
 
 f = open('.eslintrc.json', 'w')
-f.write(outputString)
+f.write(jsonOutputString)
 f.close()
+
+f = open('.eslintrc.js', 'w')
+f.write(jsOutputString)
+f.close()
+

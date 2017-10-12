@@ -22,6 +22,6 @@ Run:
 python eslint-rules-scraper.py
 ````
 
-A `.eslintrc.json` file (containing ONLY the rules) will be outputted in the same directory where `eslint-rules-scraper.py` is found.
+`.eslintrc.js`, `.eslintrc.json`, and ~~`.eslintrc.yaml`~~ files (containing ONLY the rules) will be outputted in the same directory where `eslint-rules-scraper.py` is found.
 
-**WARNING**: If you already have a `.eslintrc.json` file in this directory, it WILL be overwritten.
+**WARNING**: If you already have files named `.eslintrc.js`, `.eslintrc.json`, and ~~`.eslintrc.yaml`~~ in this directory, they WILL be overwritten.
