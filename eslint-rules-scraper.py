@@ -1,3 +1,4 @@
+import sys
 import requests
 from bs4 import BeautifulSoup
 
@@ -28,15 +29,15 @@ for i in range(len(typeIds)):
 	table = header.find_next_sibling('table')
 
 	# e.g. [RuleName1, RuleDef1, RuleName2, RuleDef2, ...]
-	rulesAll = []
+	tableContents = []
 
-	rulesSoup = table.find_all('p')
+	tableSoup = table.find_all('p')
 
-	for r in rulesSoup:
-		rulesAll.append(r.get_text())
+	for item in tableSoup:
+		tableContents.append(item.get_text())
 	
 	# e.g. [(RuleName1, RuleDef1), (RuleName2, RuleDef2), ...]
-	rules = list(zip(rulesAll[0::2], rulesAll[1::2]))
+	rules = list(zip(tableContents[0::2], tableContents[1::2]))
 
 	# e.g. (RuleType1, [(RuleName1, RuleDef1), (RuleName2, RuleDef2), ...])
 	ruleGroup = (types[i], rules)
@@ -49,27 +50,23 @@ for i in range(len(typeIds)):
 # 
 # WARNING: If you already have files named .eslintrc.js, .eslintrc.json, or .eslintrc.yaml in this directory, they WILL be overwritten.
 
-def outputRules(type):
+indent = ' '*4
+linebreak = '\n'*2
 
-	linebreak = '\n'*2
-	indent = ' '*4
-	outputString = ''
+firstIndent = ''
+secondIndent = ''
 
+
+# Helper function: Prepare the usage instruction comment string
+def prepareUsageString(type):
+
+	# if type == 'js' or type == 'json'
+	usageStringLineStart = secondIndent + '//'
+	usageStringExample = '"quotes": [2, "double"]'
+	
 	if type == 'yaml':
-		usageStringLineStart = indent + '#'
-		commentHeader = '#'*8
-		headerIndent = indent
-		commentDefn = '# '
-		columnDefn = 41
+		usageStringLineStart = secondIndent + '#'
 		usageStringExample = 'quotes: [2, double]'
-
-	if type == 'json':
-		usageStringLineStart = indent*2 + '//'
-		commentHeader = '/'*8
-		headerIndent = indent*2
-		commentDefn = '// '
-		columnDefn = 48
-		usageStringExample = '"quotes": [2, "double"]'
 
 	usageString = (usageStringLineStart + ' Usage:\n' +
 				   usageStringLineStart + indent + '"off" or 0 - turn the rule off\n' +
@@ -79,50 +76,132 @@ def outputRules(type):
 				   usageStringLineStart + indent + 'If a rule has additional options, you can specify them using array literal syntax, such as:\n' +
 				   usageStringLineStart + indent*2 + usageStringExample + '\n')
 
-	if type == 'yaml':
-		outputString = 'rules:' + linebreak + usageString + linebreak
-		ruleNameStart = indent
-		ruleNameEnd = ': 0'
+	return usageString
 
-	if type == 'json':
-		outputString = '{' + linebreak + indent + '"rules": {' + linebreak + usageString + linebreak
-		ruleNameStart = indent*2 + '"'
+
+# Helper function: Format the rules and rule groups
+def formatRules(type):
+
+	formattedRules = ''
+
+	commentSymbol = '//'
+	columnDefn = 48
+	ruleNameStart = secondIndent
+	ruleNameEnd = ': 0'
+	commentHeader = commentSymbol*4
+
+	if (type == 'js') or (type == 'json'):
+		ruleNameStart += '"'
 		ruleNameEnd = '": 0,'
 
+	if type == 'yaml':
+		commentSymbol = '#'
+		columnDefn = 41
+		commentHeader = commentSymbol*8
+
 	for rg in range(len(ruleGroups)):
-		headerString = headerIndent + commentHeader + ' ' + ruleGroups[rg][0] + ' ' + commentHeader
+		headerString = secondIndent + commentHeader + ' ' + ruleGroups[rg][0] + ' ' + commentHeader
 
 		groupRulesString = ''
 
 		for rn in range(len(ruleGroups[rg][1])):
 			ruleNameString = ruleNameStart + ruleGroups[rg][1][rn][0] + ruleNameEnd
-			ruleDefnString = commentDefn + ruleGroups[rg][1][rn][1]
+			ruleDefnString = commentSymbol + ' ' + ruleGroups[rg][1][rn][1]
 			ruleString = ruleNameString + ' '*(columnDefn-len(ruleNameString)) + ruleDefnString
 			groupRulesString += ruleString + '\n'
 
 		groupString = headerString + linebreak + groupRulesString
 
-		outputString += groupString + linebreak
+		formattedRules += groupString + linebreak
+
+	return formattedRules
+
+
+# Helper function: Format the output file
+def formatOutput(type):
+
+	global firstIndent
+	global secondIndent
+
+	firstIndent = indent
+
+	ruleConfigHeader = '"rules": {'
+
+	if type == 'yaml':
+		firstIndent = ''
+		ruleConfigHeader = 'rules:'
+
+	secondIndent = firstIndent + indent
+
+	outputStart = firstIndent + ruleConfigHeader
 
 	if type == 'json':
-		outputString += indent + '}' + linebreak + '}'
+		outputStart = '{' + linebreak + outputStart
+
+	if type == 'js':
+		outputStart = 'module.exports = {' + linebreak + outputStart
+
+	usageString = prepareUsageString(type)
+
+	formattedRules = formatRules(type)
+	
+	outputEnd = ''
+
+	if (type == 'js') or (type == 'json'):
+		outputEnd = firstIndent + '}' + linebreak + '}'
+
+	outputString = outputStart + linebreak + usageString + linebreak + formattedRules + outputEnd
 
 	return outputString
 
 
-jsonOutputString = outputRules('json')
-jsOutputString = 'module.exports = ' + jsonOutputString
-yamlOutputString = outputRules('yaml')
+# Output the file(s)
 
+filetypes = ['js', 'json', 'yaml']
 
-f = open('.eslintrc.json', 'w')
-f.write(jsonOutputString)
-f.close()
+# No arguments: Output .eslintrc.js, .eslintrc.json, and .eslintrc.yaml
+if len(sys.argv) == 1:
 
-f = open('.eslintrc.js', 'w')
-f.write(jsOutputString)
-f.close()
+	for ft in filetypes:
+		filename = '.eslintrc.' + ft
+		
+		f = open(filename, 'w')
+		f.write(formatOutput(ft))
+		f.close()
 
-f = open('.eslintrc.yaml', 'w')
-f.write(yamlOutputString)
-f.close()
+# 1 argument: Output .eslintrc file in either js, json, or yaml format, according to user input
+elif len(sys.argv) == 2:
+
+	if sys.argv[1] not in filetypes:
+
+		print('Valid filetypes are: js, json, yaml\n')
+
+	else:
+
+		filename = '.eslintrc.' + sys.argv[1]
+
+		f = open(filename, 'w')
+		f.write(formatOutput(sys.argv[1]))
+		f.close()
+
+# 2 arguments: Output a file in either js, json, or yaml format (user inputs filetype and filename)
+elif len(sys.argv) == 3:
+
+	if sys.argv[1] not in filetypes:
+
+		print('Valid filetypes are: js, json, yaml\n')
+
+	else:
+
+		filename = sys.argv[2] + '.' + sys.argv[1]
+
+		f = open(filename, 'w')
+		f.write(formatOutput(sys.argv[1]))
+		f.close()	
+
+else:
+
+	print('Usage: python eslint-rules-scraper.py [filetype [filename]]\n')
+	print('Valid filetypes are: js, json, yaml\n')
+	print('Please input filename without extension - extension is automatically the selected filetype.')
+
