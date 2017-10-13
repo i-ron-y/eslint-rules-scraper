@@ -44,44 +44,76 @@ for i in range(len(typeIds)):
 	ruleGroups.append(ruleGroup)
 
 
-# Here is where the .eslintrc.json file (containing ONLY the rules) is outputted, in the same directory where eslint-rules-scraper.py is found.
-# WARNING: If you have a .eslintrc.json file in this directory, it WILL be overwritten.
+# Here is where the .eslintrc.js, .eslintrc.json, and .eslintrc.yaml files (containing ONLY the rules) are outputted,
+# in the same directory where eslint-rules-scraper.py is found.
+# 
+# WARNING: If you already have files named .eslintrc.js, .eslintrc.json, or .eslintrc.yaml in this directory, they WILL be overwritten.
 
-linebreak = '\n'*2
-indent = ' '*4
-commentHeader = '/'*8
-commentDefn = '// '
-columnDefn = 48
+def outputRules(type):
 
-usageStringLineStart = indent*2 + '//'
+	linebreak = '\n'*2
+	indent = ' '*4
+	outputString = ''
 
-usageString = (usageStringLineStart + ' Usage:\n' +
-			   usageStringLineStart + indent + '"off" or 0 - turn the rule off\n' +
-			   usageStringLineStart + indent + '"warn" or 1 - turn the rule on as a warning (doesn’t affect exit code)\n' +
-			   usageStringLineStart + indent + '"error" or 2 - turn the rule on as an error (exit code is 1 when triggered)\n' +
-			   usageStringLineStart + '\n' +
-			   usageStringLineStart + indent + 'If a rule has additional options, you can specify them using array literal syntax, such as:\n' +
-			   usageStringLineStart + indent*2 + '"quotes": [2, "double"]\n')
+	if type == 'yaml':
+		usageStringLineStart = indent + '#'
+		commentHeader = '#'*8
+		headerIndent = indent
+		commentDefn = '# '
+		columnDefn = 41
+		usageStringExample = 'quotes: [2, double]'
 
-jsonOutputString = '{' + linebreak + indent + '"rules": {' + linebreak + usageString + linebreak
+	if type == 'json':
+		usageStringLineStart = indent*2 + '//'
+		commentHeader = '/'*8
+		headerIndent = indent*2
+		commentDefn = '// '
+		columnDefn = 48
+		usageStringExample = '"quotes": [2, "double"]'
 
-for rg in range(len(ruleGroups)):
-	headerString = indent*2 + commentHeader + ' ' + ruleGroups[rg][0] + ' ' + commentHeader
+	usageString = (usageStringLineStart + ' Usage:\n' +
+				   usageStringLineStart + indent + '"off" or 0 - turn the rule off\n' +
+				   usageStringLineStart + indent + '"warn" or 1 - turn the rule on as a warning (doesn’t affect exit code)\n' +
+				   usageStringLineStart + indent + '"error" or 2 - turn the rule on as an error (exit code is 1 when triggered)\n' +
+				   usageStringLineStart + '\n' +
+				   usageStringLineStart + indent + 'If a rule has additional options, you can specify them using array literal syntax, such as:\n' +
+				   usageStringLineStart + indent*2 + usageStringExample + '\n')
 
-	groupRulesString = ''
+	if type == 'yaml':
+		outputString = 'rules:' + linebreak + usageString + linebreak
+		ruleNameStart = indent
+		ruleNameEnd = ': 0'
 
-	for rn in range(len(ruleGroups[rg][1])):
-		ruleNameString = indent*2 + '"' + ruleGroups[rg][1][rn][0] + '": 0,'
-		ruleDefnString = commentDefn + ruleGroups[rg][1][rn][1]
-		ruleString = ruleNameString + ' '*(columnDefn-len(ruleNameString)) + ruleDefnString
-		groupRulesString += ruleString + '\n'
+	if type == 'json':
+		outputString = '{' + linebreak + indent + '"rules": {' + linebreak + usageString + linebreak
+		ruleNameStart = indent*2 + '"'
+		ruleNameEnd = '": 0,'
 
-	groupString = headerString + linebreak + groupRulesString
+	for rg in range(len(ruleGroups)):
+		headerString = headerIndent + commentHeader + ' ' + ruleGroups[rg][0] + ' ' + commentHeader
 
-	jsonOutputString += groupString + linebreak
+		groupRulesString = ''
 
-jsonOutputString += indent + '}' + linebreak + '}'
+		for rn in range(len(ruleGroups[rg][1])):
+			ruleNameString = ruleNameStart + ruleGroups[rg][1][rn][0] + ruleNameEnd
+			ruleDefnString = commentDefn + ruleGroups[rg][1][rn][1]
+			ruleString = ruleNameString + ' '*(columnDefn-len(ruleNameString)) + ruleDefnString
+			groupRulesString += ruleString + '\n'
+
+		groupString = headerString + linebreak + groupRulesString
+
+		outputString += groupString + linebreak
+
+	if type == 'json':
+		outputString += indent + '}' + linebreak + '}'
+
+	return outputString
+
+
+jsonOutputString = outputRules('json')
 jsOutputString = 'module.exports = ' + jsonOutputString
+yamlOutputString = outputRules('yaml')
+
 
 f = open('.eslintrc.json', 'w')
 f.write(jsonOutputString)
@@ -91,3 +123,6 @@ f = open('.eslintrc.js', 'w')
 f.write(jsOutputString)
 f.close()
 
+f = open('.eslintrc.yaml', 'w')
+f.write(yamlOutputString)
+f.close()
