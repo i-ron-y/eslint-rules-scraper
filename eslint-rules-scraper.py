@@ -100,11 +100,16 @@ def formatRules(type):
 		commentHeader = commentSymbol*8
 
 	for rg in range(len(ruleGroups)):
+
 		headerString = secondIndent + commentHeader + ' ' + ruleGroups[rg][0] + ' ' + commentHeader
 
 		groupRulesString = ''
 
 		for rn in range(len(ruleGroups[rg][1])):
+			
+			if ((type == 'js') or (type == 'json')) and (rg == len(ruleGroups)-1) and (rn == len(ruleGroups[rg][1])-1):
+				ruleNameEnd = '": 0'
+
 			ruleNameString = ruleNameStart + ruleGroups[rg][1][rn][0] + ruleNameEnd
 			ruleDefnString = commentSymbol + ' ' + ruleGroups[rg][1][rn][1]
 			ruleString = ruleNameString + ' '*(columnDefn-len(ruleNameString)) + ruleDefnString

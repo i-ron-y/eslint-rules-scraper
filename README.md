@@ -11,6 +11,7 @@ Install the required packages:
 
 ````
 pip install urllib3
+pip install requests
 pip install BeautifulSoup4
 ````
 
