@@ -12,12 +12,12 @@ soup = BeautifulSoup(page.content, 'html.parser')
 typeIds = []
 
 # e.g. ['Possible Errors', ...]
-types = []
+typeNames = []
 
 for tag in soup.find_all('h2',{'id':True}):
 	if not (tag['id'] == 'deprecated' or tag['id'] == 'removed'):
 		typeIds.append(tag['id'])
-		types.append(tag.get_text())
+		typeNames.append(tag.get_text())
 
 
 # e.g. [(RuleType1, [(RuleName1, RuleDef1), (RuleName2, RuleDef2), ...]), (RuleType2, [...]), ...]
@@ -40,7 +40,7 @@ for i in range(len(typeIds)):
 	rules = list(zip(tableContents[0::2], tableContents[1::2]))
 
 	# e.g. (RuleType1, [(RuleName1, RuleDef1), (RuleName2, RuleDef2), ...])
-	ruleGroup = (types[i], rules)
+	ruleGroup = (typeNames[i], rules)
 
 	ruleGroups.append(ruleGroup)
 
@@ -57,24 +57,24 @@ firstIndent = ''
 secondIndent = ''
 
 
-# Helper function: Prepare the usage instruction comment string
+# Helper function: Prepare the 'usage instruction' comment string
 def prepareUsageString(type):
 
-	# if type == 'js' or type == 'json'
-	usageStringLineStart = secondIndent + '//'
-	usageStringExample = '"quotes": [2, "double"]'
-	
-	if type == 'yaml':
+	if type == 'js' or type == 'json':
+		usageStringLineStart = secondIndent + '//'
+		usageStringExample = '"quotes": [2, "double"]'
+
+	else:    # if type == 'yaml':
 		usageStringLineStart = secondIndent + '#'
 		usageStringExample = 'quotes: [2, double]'
 
 	usageString = (usageStringLineStart + ' Usage:\n' +
-				   usageStringLineStart + indent + '"off" or 0 - turn the rule off\n' +
-				   usageStringLineStart + indent + '"warn" or 1 - turn the rule on as a warning (doesn’t affect exit code)\n' +
-				   usageStringLineStart + indent + '"error" or 2 - turn the rule on as an error (exit code is 1 when triggered)\n' +
-				   usageStringLineStart + '\n' +
-				   usageStringLineStart + indent + 'If a rule has additional options, you can specify them using array literal syntax, such as:\n' +
-				   usageStringLineStart + indent*2 + usageStringExample + '\n')
+	               usageStringLineStart + indent + '"off" or 0 - turn the rule off\n' +
+	               usageStringLineStart + indent + '"warn" or 1 - turn the rule on as a warning (doesn’t affect exit code)\n' +
+	               usageStringLineStart + indent + '"error" or 2 - turn the rule on as an error (exit code is 1 when triggered)\n' +
+	               usageStringLineStart + '\n' +
+	               usageStringLineStart + indent + 'If a rule has additional options, you can specify them using array literal syntax, such as:\n' +
+	               usageStringLineStart + indent*2 + usageStringExample + '\n')
 
 	return usageString
 
@@ -84,20 +84,19 @@ def formatRules(type):
 
 	formattedRules = ''
 
-	commentSymbol = '//'
-	columnDefn = 48
-	ruleNameStart = secondIndent
-	ruleNameEnd = ': 0'
-	commentHeader = commentSymbol*4
-
-	if (type == 'js') or (type == 'json'):
-		ruleNameStart += '"'
+	if type == 'js' or type == 'json':
+		commentSymbol = '//'
+		columnDefn = 48
+		commentHeader = commentSymbol*4
+		ruleNameStart = secondIndent + '"'
 		ruleNameEnd = '": 0,'
 
-	if type == 'yaml':
+	else:    # if type == 'yaml':
 		commentSymbol = '#'
 		columnDefn = 41
 		commentHeader = commentSymbol*8
+		ruleNameStart = secondIndent
+		ruleNameEnd = ': 0'
 
 	for rg in range(len(ruleGroups)):
 
@@ -128,34 +127,34 @@ def formatOutput(type):
 	global firstIndent
 	global secondIndent
 
-	firstIndent = indent
+	if type == 'js' or type == 'json':
+		firstIndent = indent
+		ruleConfigHeader = '"rules": {'
 
-	ruleConfigHeader = '"rules": {'
+		if type == 'js':
+			outputStart = 'module.exports = {' + linebreak
 
-	if type == 'yaml':
+		else:    # type == 'json':
+			outputStart = '{' + linebreak
+	
+	else:    # if type == 'yaml':
 		firstIndent = ''
 		ruleConfigHeader = 'rules:'
+		outputStart = ''
 
 	secondIndent = firstIndent + indent
-
-	outputStart = firstIndent + ruleConfigHeader
-
-	if type == 'json':
-		outputStart = '{' + linebreak + outputStart
-
-	if type == 'js':
-		outputStart = 'module.exports = {' + linebreak + outputStart
 
 	usageString = prepareUsageString(type)
 
 	formattedRules = formatRules(type)
 	
-	outputEnd = ''
-
-	if (type == 'js') or (type == 'json'):
+	if type == 'js' or type == 'json':
 		outputEnd = firstIndent + '}' + linebreak + '}'
+	
+	else:    # if type == 'yaml':
+		outputEnd = ''
 
-	outputString = outputStart + linebreak + usageString + linebreak + formattedRules + outputEnd
+	outputString = outputStart + firstIndent + ruleConfigHeader + linebreak + usageString + linebreak + formattedRules + outputEnd
 
 	return outputString
 
@@ -168,6 +167,7 @@ filetypes = ['js', 'json', 'yaml']
 if len(sys.argv) == 1:
 
 	for ft in filetypes:
+		
 		filename = '.eslintrc.' + ft
 		
 		f = open(filename, 'w')
