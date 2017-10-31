@@ -53,10 +53,6 @@ for i in range(len(typeIds)):
 indent = ' '*4
 linebreak = '\n'*2
 
-firstIndent = ''
-secondIndent = ''
-
-
 # Helper function: Prepare the 'usage instruction' comment string
 def prepareUsageString(type):
 
