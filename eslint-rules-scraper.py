@@ -45,13 +45,15 @@ for i in range(len(typeIds)):
 	ruleGroups.append(ruleGroup)
 
 
+
 # Here is where the .eslintrc.js, .eslintrc.json, and .eslintrc.yaml files (containing ONLY the rules) are outputted,
 # in the same directory where eslint-rules-scraper.py is found.
 # 
 # WARNING: If you already have files named .eslintrc.js, .eslintrc.json, or .eslintrc.yaml in this directory, they WILL be overwritten.
 
 indent = ' '*4
-linebreak = '\n'*2
+emptyline = '\n'*2
+
 
 # Helper function: Prepare the 'usage instruction' comment string
 def prepareUsageString(type):
@@ -110,9 +112,9 @@ def formatRules(type):
 			ruleString = ruleNameString + ' '*(columnDefn-len(ruleNameString)) + ruleDefnString
 			groupRulesString += ruleString + '\n'
 
-		groupString = headerString + linebreak + groupRulesString
+		groupString = headerString + emptyline + groupRulesString
 
-		formattedRules += groupString + linebreak
+		formattedRules += groupString + emptyline
 
 	return formattedRules
 
@@ -128,10 +130,10 @@ def formatOutput(type):
 		ruleConfigHeader = '"rules": {'
 
 		if type == 'js':
-			outputStart = 'module.exports = {' + linebreak
+			outputStart = 'module.exports = {' + emptyline
 
 		else:    # type == 'json':
-			outputStart = '{' + linebreak
+			outputStart = '{' + emptyline
 	
 	else:    # if type == 'yaml':
 		firstIndent = ''
@@ -145,12 +147,12 @@ def formatOutput(type):
 	formattedRules = formatRules(type)
 	
 	if type == 'js' or type == 'json':
-		outputEnd = firstIndent + '}' + linebreak + '}'
+		outputEnd = firstIndent + '}' + emptyline + '}'
 	
 	else:    # if type == 'yaml':
 		outputEnd = ''
 
-	outputString = outputStart + firstIndent + ruleConfigHeader + linebreak + usageString + linebreak + formattedRules + outputEnd
+	outputString = outputStart + firstIndent + ruleConfigHeader + emptyline + usageString + emptyline + formattedRules + outputEnd
 
 	return outputString
 
